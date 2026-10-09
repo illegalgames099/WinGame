@@ -1,4 +1,4 @@
 files:
-  - source: /Mythic/Localizable.xcstrings
-    translation: /Mythic/Localizable.xcstrings
+  - source: /WinGame/Localizable.xcstrings
+    translation: /WinGame/Localizable.xcstrings
     multilingual: 1

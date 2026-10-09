@@ -1,1 +1,1 @@
-This is WinGame, built off of Mythic, it will be getting features for Steam, GOG, and maybe EA if I can. You can currently play Epic games, and I will also try to let you use Apple IPAs, Android APKs, PS Remote Play, Amazon Luna, and many more!
+This is WinGame, built off of WinGame, it will be getting features for Steam, GOG, and maybe EA if I can. You can currently play Epic games, and I will also try to let you use Apple IPAs, Android APKs, PS Remote Play, Amazon Luna, and many more!

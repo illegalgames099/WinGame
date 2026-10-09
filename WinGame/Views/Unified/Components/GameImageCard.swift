@@ -69,7 +69,7 @@ struct GameImageCard: View {
                                     withAnimation { isImageEmpty = false }
                                 }
                         }
-                        .aspectRatio(contentMode: .fill)
+                        .scaledToFill()
                         .frame(width: geometry.size.width,
                                height: geometry.size.height)
                     case .failure(let error):
@@ -179,6 +179,6 @@ extension GameImageCard {
                       withBlur: true)
         .aspectRatio(3/4, contentMode: .fill)
     }
-    .aspectRatio(contentMode: .fit)
+    .scaledToFit()
     .padding()
 }

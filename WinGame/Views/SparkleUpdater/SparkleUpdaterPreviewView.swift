@@ -32,7 +32,7 @@ extension SparkleUpdater {
                         VStack {
                             BundleIconView()
                                 .shadow(radius: .leastNormalMagnitude)
-                                .aspectRatio(contentMode: .fit)
+                                .scaledToFit()
                             
                             VStack {
                                 Text(Bundle.main.infoDictionary?["CFBundleName"] as? String ?? "Unknown")

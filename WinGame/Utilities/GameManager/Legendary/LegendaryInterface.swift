@@ -203,10 +203,10 @@ final class Legendary {
 
     @discardableResult
     @MainActor static func install(game: EpicGamesGame,
-                        forPlatform platform: Game.Platform,
-                        qualityOfService: QualityOfService,
-                        optionalPackIDs: [String] = .init(),
-                        baseDirectoryURL: URL? = UserDefaults.standard.url(forKey: "installBaseURL")) async throws -> GameOperation {
+                                   forPlatform platform: Game.Platform,
+                                   qualityOfService: QualityOfService,
+                                   optionalPackIDs: [String] = .init(),
+                                   baseDirectoryURL: URL? = UserDefaults.standard.url(forKey: "installBaseURL")) async throws -> GameOperation {
         guard let supportedPlatforms = game.getSupportedPlatforms(),
               supportedPlatforms.contains(platform) else {
             throw UnsupportedInstallationPlatformError()
@@ -353,8 +353,8 @@ final class Legendary {
      */
     @discardableResult
     @MainActor static func uninstall(game: EpicGamesGame,
-                          persistFiles: Bool,
-                          runUninstallerIfPossible: Bool = true) async throws -> GameOperation {
+                                     persistFiles: Bool,
+                                     runUninstallerIfPossible: Bool = true) async throws -> GameOperation {
         let operation: GameOperation = .init(game: game, type: .uninstall) { _ in
             var arguments: [String] = ["-y", "uninstall", game.id]
 

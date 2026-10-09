@@ -83,10 +83,10 @@ final class EpicGamesGameManager {
 
     @discardableResult
     @MainActor static func install(game: EpicGamesGame,
-                        forPlatform platform: Game.Platform,
-                        qualityOfService: QualityOfService,
-                        optionalPackIDs: [String] = .init(),
-                        baseDirectoryURL: URL? = UserDefaults.standard.url(forKey: "installBaseURL")) async throws -> GameOperation {
+                                   forPlatform platform: Game.Platform,
+                                   qualityOfService: QualityOfService,
+                                   optionalPackIDs: [String] = .init(),
+                                   baseDirectoryURL: URL? = UserDefaults.standard.url(forKey: "installBaseURL")) async throws -> GameOperation {
         return try await Legendary.install(game: game,
                                            forPlatform: platform,
                                            qualityOfService: qualityOfService,
@@ -119,17 +119,17 @@ final class EpicGamesGameManager {
 
     @discardableResult
     @MainActor static func move(game: EpicGamesGame,
-                     to newLocation: URL) async throws -> GameOperation {
+                                to newLocation: URL) async throws -> GameOperation {
         return try await Legendary.move(game: game, to: newLocation)
     }
 
     @discardableResult
     @MainActor static func uninstall(game: EpicGamesGame,
-                          persistFiles: Bool,
-                          runUninstallerIfPossible: Bool = true) async throws -> GameOperation {
+                                     persistFiles: Bool,
+                                     runUninstallerIfPossible: Bool = true) async throws -> GameOperation {
         return try await Legendary.uninstall(game: game,
-                                      persistFiles: persistFiles,
-                                      runUninstallerIfPossible: runUninstallerIfPossible)
+                                             persistFiles: persistFiles,
+                                             runUninstallerIfPossible: runUninstallerIfPossible)
     }
     
     @MainActor static func importGame(_ game: EpicGamesGame,

@@ -30,7 +30,6 @@ class SteamGame: Game {
         try super.init(from: decoder)
     }
 }
-import Foundation
 
 @available(*, deprecated, message: "Soon...")
 class GOGGame: Game {
@@ -50,7 +49,6 @@ class GOGGame: Game {
         try super.init(from: decoder)
     }
 }
-import Foundation
 
 @available(*, deprecated, message: "Soon...")
 class EAGame: Game {

@@ -43,7 +43,7 @@ struct GameSettingsView: View {
                             if isImageEmpty && game.isFallbackImageAvailable {
                                 GameImageCard.FallbackGameImageCard(game: .constant(game))
                                     .frame(width: 65, height: 65)
-                                    .aspectRatio(contentMode: .fit)
+                                    .scaledToFit()
                                     .padding(.trailing)
                             }
 

@@ -35,12 +35,12 @@ extension Process {
         
         try self.run()
         
-        var decodedStandardOutput: String? = nil
+        var decodedStandardOutput: String?
         if let data = try stdout.fileHandleForReading.readToEnd() {
             decodedStandardOutput = .init(data: data, encoding: .utf8)
         }
         
-        var decodedStandardError: String? = nil
+        var decodedStandardError: String?
         if let data = try stderr.fileHandleForReading.readToEnd() {
             decodedStandardError = .init(data: data, encoding: .utf8)
         }

@@ -56,7 +56,7 @@ struct HomeView: View {
                             if isImageEmpty, recentGame.isFallbackImageAvailable {
                                 GameImageCard.FallbackGameImageCard(game: .constant(recentGame))
                                     .frame(width: 65, height: 65)
-                                    .aspectRatio(contentMode: .fit)
+                                    .scaledToFit()
                                     .padding(.trailing)
                             }
                             

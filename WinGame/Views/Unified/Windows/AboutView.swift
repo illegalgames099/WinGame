@@ -169,7 +169,7 @@ extension AboutView {
                     image
                         .resizable()
                         .frame(width: 48, height: 48)
-                        .aspectRatio(contentMode: .fit)
+                        .scaledToFit()
                     
                     VStack(alignment: .leading) {
                         Text(title)

@@ -31,8 +31,6 @@ extension Process {
         let stderr: Pipe = .init(); self.standardError = stderr
         let stdout: Pipe = .init(); self.standardOutput = stdout
         
-        let log: Logger = .custom(category: "Process[\(self.processIdentifier)] (wrapped) @ \(self.executableURL?.pathComponents.suffix(3).joined(separator: "/") ?? .init())")
-        
         try self.run()
         
         var decodedStandardOutput: String?
@@ -137,13 +135,15 @@ extension Process {
                 for line in text.split(whereSeparator: \.isNewline) {
                     let chunk: OutputChunk = .init(stream: stream, output: String(line))
                     
-                    do {
-                        if let chunkHandler, let reply = try chunkHandler(chunk) {
-                            await writer.write(reply)
+                    if let chunkHandler {
+                        do {
+                            if let reply = try chunkHandler(chunk) {
+                                await writer.write(reply)
+                            }
+                        } catch {
+                            log.error("[\(stream.rawValue)] caller threw an error: \(error)")
+                            if throwsOnChunkError { throw error }
                         }
-                    } catch {
-                        log.error("[\(stream.rawValue)] caller threw an error: \(error)")
-                        if throwsOnChunkError { throw error }
                     }
                     
                     log.debug("[\(stream.rawValue)] \(line, privacy: .public)")

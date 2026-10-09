@@ -191,7 +191,7 @@ extension GameCard {
             var body: some View {
                 Button {
                     Task(priority: .userInitiated) {
-                        try await game.update()
+                        try? await game.update()
                     }
                 } label: {
                     if withLabel {

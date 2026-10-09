@@ -261,7 +261,7 @@ final class Wine { // TODO: https://forum.winehq.org/viewtopic.php?t=15416
                 process.environment = ["WINEPREFIX": url.path]
                 process.qualityOfService = .utility
                 
-                try process.run()
+                try? process.run()
             }
         }
     }
@@ -289,7 +289,7 @@ final class Wine { // TODO: https://forum.winehq.org/viewtopic.php?t=15416
         process.arguments = ["reg", "add", key, "-v", name, "-t", type.rawValue, "-d", data, "-f"]
         transformProcess(process, containerURL: containerURL)
         
-        try process.run()
+        try? process.run()
         
         process.waitUntilExit()
         
@@ -375,7 +375,7 @@ final class Wine { // TODO: https://forum.winehq.org/viewtopic.php?t=15416
             process.arguments = ["winecfg", "-v", String(describing: version)]
             transformProcess(process, containerURL: containerURL)
             
-            try process.run()
+            try? process.run()
             
             process.waitUntilExit()
             

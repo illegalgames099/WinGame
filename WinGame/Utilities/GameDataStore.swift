@@ -22,7 +22,7 @@ import OSLog
     var library: Set<Game> = .init() {
         didSet {
             guard !isUpdatingFromObserver else { return }
-            try? UserDefaults.standard.encodeAndSet(library.map({ AnyGame($0) }), forKey: "games")
+            do { try UserDefaults.standard.encodeAndSet(library.map({ AnyGame($0) }), forKey: "games") } catch {}
         }
     }
 

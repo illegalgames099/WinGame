@@ -26,7 +26,7 @@ import Foundation
  variableManager.setVariable("hello", value: "hi")
  ```
  */
-@available(*, deprecated, message: "Prefer the use of structured classes or environment objects. This class will be removed shortly.")
+
 @MainActor class VariableManager: ObservableObject, @unchecked Sendable {
     static let shared: VariableManager = .init()
 

@@ -189,7 +189,7 @@ extension GameOperation.ActiveOperationType: CustomStringConvertible {
                 lock.withLock({ self.fileTotalCount = self._progress.fileTotalCount })
                 lock.withLock({ self.fileCompletedCount = self._progress.fileCompletedCount })
 
-                try await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
     }

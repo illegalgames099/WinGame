@@ -10,7 +10,7 @@
 import Foundation
 import OSLog
 
-class LocalGame: Game {
+class LocalGame: Game, @unchecked Sendable {
     override var storefront: Storefront? { .local }
 
     override init(id: String = UUID().uuidString,

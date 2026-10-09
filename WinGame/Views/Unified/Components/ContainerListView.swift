@@ -576,10 +576,10 @@ struct ContainerConfigurationView: View {
                             process.arguments = ["uninstaller"]
                             Wine.transformProcess(process, containerURL: container.url)
                             
-                            try process.run()
+                            try? process.run()
                             
                             while let isActive = try? await Wine.tasklist(for: containerURL).contains(where: { $0.imageName == "uninstaller.exe" }) {
-                                try await Task.sleep(for: .seconds(2))
+                                try? await Task.sleep(for: .seconds(2))
                                 await MainActor.run { isUninstallerActive = isActive }
                             }
                         }
@@ -594,10 +594,10 @@ struct ContainerConfigurationView: View {
                             process.arguments = ["winecfg"]
                             Wine.transformProcess(process, containerURL: container.url)
                             
-                            try process.run()
+                            try? process.run()
 
                             while let isActive = try? await Wine.tasklist(for: containerURL).contains(where: { $0.imageName == "winecfg.exe" }) {
-                                try await Task.sleep(for: .seconds(2))
+                                try? await Task.sleep(for: .seconds(2))
                                 await MainActor.run { isConfiguratorActive = isActive }
                             }
                         }
@@ -612,10 +612,10 @@ struct ContainerConfigurationView: View {
                             process.arguments = ["regedit"]
                             Wine.transformProcess(process, containerURL: container.url)
                             
-                            try process.run()
+                            try? process.run()
 
                             while let isActive = try? await Wine.tasklist(for: containerURL).contains(where: { $0.imageName == "regedit.exe" }) {
-                                try await Task.sleep(for: .seconds(2))
+                                try? await Task.sleep(for: .seconds(2))
                                 await MainActor.run { isRegistryEditorActive = isActive }
                             }
                         }

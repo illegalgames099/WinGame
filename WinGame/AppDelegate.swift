@@ -60,7 +60,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             process.arguments = ["-y", "sync-saves"]
             await Legendary.transformProcess(process)
             
-            try process.run()
+            try? process.run()
         }
 
         // MARK: DiscordRPC Delegate Ininitialisation & Connection
@@ -161,7 +161,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             process.arguments = ["cleanup"]
             await Legendary.transformProcess(process)
             
-            try process.run()
+            try? process.run()
         }
     }
 }

@@ -32,7 +32,7 @@ struct EpicGamesGameUninstallationView: View {
             operating: $isOperating,
             action: {
                 Task(priority: .userInitiated) { @MainActor [game] in
-                    _ = try await EpicGamesGameManager.uninstall(game: game,
+                    _ = try? await EpicGamesGameManager.uninstall(game: game,
                                                                   persistFiles: !removeFromDisk,
                                                                   runUninstallerIfPossible: runUninstaller)
                 }

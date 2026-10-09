@@ -250,7 +250,7 @@ final class Legendary {
         }
 
         operation.qualityOfService = qualityOfService
-        await Game.operationManager.queueOperation(operation)
+        Game.operationManager.queueOperation(operation)
         return operation
     }
 
@@ -280,7 +280,7 @@ final class Legendary {
         }
 
         operation.qualityOfService = qualityOfService
-        await Game.operationManager.queueOperation(operation)
+        Game.operationManager.queueOperation(operation)
         return operation
     }
 
@@ -336,7 +336,7 @@ final class Legendary {
         }
 
         operation.qualityOfService = qualityOfService
-        await Game.operationManager.queueOperation(operation)
+        Game.operationManager.queueOperation(operation)
         return operation
     }
 
@@ -388,7 +388,7 @@ final class Legendary {
             game.installationState = .uninstalled
         }
 
-        await Game.operationManager.queueOperation(operation)
+        Game.operationManager.queueOperation(operation)
         return operation
     }
 
@@ -427,7 +427,7 @@ final class Legendary {
             game.installationState = .installed(location: newLocation, platform: platform)
         }
 
-        await Game.operationManager.queueOperation(operation)
+        Game.operationManager.queueOperation(operation)
         return operation
     }
 
@@ -570,7 +570,7 @@ final class Legendary {
             }
         }
 
-        await Game.operationManager.queueOperation(operation)
+        Game.operationManager.queueOperation(operation)
         return operation
     }
 

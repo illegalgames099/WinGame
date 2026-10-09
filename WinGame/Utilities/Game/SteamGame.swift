@@ -11,8 +11,7 @@
 
 import Foundation
 
-@available(*, deprecated, message: "Soon...")
-class SteamGame: Game {
+class SteamGame: Game, @unchecked Sendable {
     override var storefront: Game.Storefront? { .steam }
     override init(id: String = UUID().uuidString,
                   title: String,
@@ -31,8 +30,7 @@ class SteamGame: Game {
     }
 }
 
-@available(*, deprecated, message: "Soon...")
-class GOGGame: Game {
+class GOGGame: Game, @unchecked Sendable {
     override var storefront: Game.Storefront? { .gog }
 
     override init(id: String = UUID().uuidString,
@@ -50,8 +48,7 @@ class GOGGame: Game {
     }
 }
 
-@available(*, deprecated, message: "Soon...")
-class EAGame: Game {
+class EAGame: Game, @unchecked Sendable {
     override var storefront: Game.Storefront? { .electronicArts }
 
     override init(id: String = UUID().uuidString,

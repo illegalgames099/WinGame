@@ -9,7 +9,6 @@
 
 import SwiftUI
 import OSLog
-import SwordRPC
 
 struct ContainerListView: View {
     @State private var isContainerConfigurationViewPresented = false
@@ -631,15 +630,7 @@ struct ContainerConfigurationView: View {
                 .fixedSize()
             }
             .task(priority: .background) {
-                discordRPC.setPresence({
-                    var presence: RichPresence = .init()
-                    presence.details = "Configuring container \"\(container.name)\""
-                    presence.state = "Configuring Container"
-                    presence.timestamps.start = .now
-                    presence.assets.largeImage = "macos_512x512_2x"
-                    
-                    return presence
-                }())
+                
             }
         } else {
             

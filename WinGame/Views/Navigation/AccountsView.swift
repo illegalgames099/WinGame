@@ -5,157 +5,283 @@
 //  Created by vapidinfinity (esi) on 12/3/2024.
 //
 
-// Copyright © 2023-2025 vapidinfinity
+// Copyright © 2023-2026 vapidinfinity
 
 import SwiftUI
-import SwordRPC
 
 struct AccountsView: View {
+    @Bindable private var accountManager: StorefrontAccountManager = .shared
     @ObservedObject private var epicWebAuthViewModel: EpicWebAuthViewModel = .shared
 
     @State private var isEpicSignOutConfirmationAlertPresented: Bool = false
     @State private var epicSignOutError: Error?
     @State private var isEpicSignOutErrorAlertPresented: Bool = false
-    @State private var isEpicAccountCardRefreshed = false
+    @State private var editingStorefront: Game.Storefront?
+
+    @State private var usernameInput: String = ""
+    @State private var idInput: String = ""
 
     var body: some View {
         ScrollView {
-            HStack {
-                AccountCard(
-                    signedInUser: .constant(try? Legendary.retrieveUser()),
-                    image: Image("EGFaceless"),
-                    storefront: .epicGames,
-                    signInAction: {
-                        Task { @MainActor in
-                            epicWebAuthViewModel.showSignInWindow()
-                        }
-                    },
-                    signOutAction: {
-                        isEpicSignOutConfirmationAlertPresented = true
-                    }
-                )
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(.quinary)
-                )
-                .alert(
-                    "Are you sure you want to sign out of Epic Games?",
-                    isPresented: $isEpicSignOutConfirmationAlertPresented
-                ) {
-                    Button(role: .destructive) {
-                        Task {
-                            do {
-                                try await Legendary.signOut()
-                                isEpicAccountCardRefreshed.toggle()
-                                // FIXME: no way to propogate error
-                                // below is the code to do it
-                                /*
-                                .alert(
-                                    "Unable to sign out of Epic Games.",
-                                    isPresented: $isEpicSignOutErrorAlertPresented,
-                                    presenting: epicSignOutError
-                                ) { _ in
-                                    Button(role: .close) {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Connected Storefront Accounts")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.white)
 
-                                    } label: {
-                                        Text("OK")
-                                    }
-                                } message: { error in
-                                    Text(error.localizedDescription)
-                                }
-                                */
-                            } catch {
-                                epicSignOutError = error
-                                isEpicSignOutErrorAlertPresented = true
+                Text("Link your personal storefront accounts to manage games, synchronization, and launch environments.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 16)], spacing: 16) {
+                    // Epic Games Card
+                    storefrontCard(
+                        title: "Epic Games",
+                        systemImage: "shield.rhombohex.fill",
+                        color: .purple,
+                        username: accountManager.epicUsername,
+                        isConnected: accountManager.isEpicConnected,
+                        onConnect: {
+                            Task { @MainActor in
+                                epicWebAuthViewModel.showSignInWindow()
                             }
+                        },
+                        onDisconnect: {
+                            isEpicSignOutConfirmationAlertPresented = true
                         }
-                    } label: {
-                        Text("Sign Out")
-                    }
+                    )
+
+                    // Steam Card
+                    storefrontCard(
+                        title: "Steam",
+                        systemImage: "circle.grid.cross.fill",
+                        color: .blue,
+                        username: accountManager.isSteamConnected ? accountManager.steamUsername : nil,
+                        isConnected: accountManager.isSteamConnected,
+                        onConnect: {
+                            startEditing(.steam)
+                        },
+                        onDisconnect: {
+                            accountManager.disconnectSteam()
+                            Task { try? await GameDataStore.shared.refreshFromStorefronts(.steam) }
+                        }
+                    )
+
+                    // Electronic Arts (EA) Card
+                    storefrontCard(
+                        title: "Electronic Arts (EA)",
+                        systemImage: "triangle.fill",
+                        color: .red,
+                        username: accountManager.isEAConnected ? accountManager.eaUsername : nil,
+                        isConnected: accountManager.isEAConnected,
+                        onConnect: {
+                            startEditing(.electronicArts)
+                        },
+                        onDisconnect: {
+                            accountManager.disconnectEA()
+                            Task { try? await GameDataStore.shared.refreshFromStorefronts(.electronicArts) }
+                        }
+                    )
+
+                    // GOG Card
+                    storefrontCard(
+                        title: "GOG",
+                        systemImage: "gamecontroller.fill",
+                        color: .teal,
+                        username: accountManager.isGOGConnected ? accountManager.gogUsername : nil,
+                        isConnected: accountManager.isGOGConnected,
+                        onConnect: {
+                            startEditing(.gog)
+                        },
+                        onDisconnect: {
+                            accountManager.disconnectGOG()
+                            Task { try? await GameDataStore.shared.refreshFromStorefronts(.gog) }
+                        }
+                    )
                 }
-                .id(isEpicAccountCardRefreshed)
             }
+            .padding(24)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
         .navigationTitle("Accounts")
-        .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Currently in the accounts section."
-                presence.state = "Checking out all their accounts"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-
-                return presence
-            }())
-        }
-    }
-}
-
-extension AccountsView {
-    struct AccountCard: View {
-        @Binding var signedInUser: String?
-
-        var image: Image
-        var storefront: Game.Storefront
-        var signInAction: () -> Void
-        var signOutAction: () -> Void
-
-        @State private var isHoveringOverSignOutButton: Bool = false
-        // @State private var isSignOutConfirmationAlertPresented: Bool = false
-
-        var body: some View {
-            HStack {
-                image
-                    .resizable()
-                    .aspectRatio(1, contentMode: .fit)
-                    .frame(width: 60)
-
-                VStack(alignment: .leading) {
-                    Text(storefront.description)
-                        .font(.title.bold())
-
-                    Text(signedInUser != nil ? "Signed in as \"\(signedInUser ?? "Unknown")\"" : "Not signed in")
-                }
-
-                Group {
-                    if signedInUser != nil {
-                        Button("Sign Out", systemImage: "person.slash", action: signOutAction)
-                            .onHover { hovering in
-                                withAnimation {
-                                    isHoveringOverSignOutButton = hovering
-                                }
-                            }
-                            .conditionalTransform(if: isHoveringOverSignOutButton) { view in
-                                view
-                                    .foregroundStyle(.red)
-                            }
-                        /* FIXME: ☹️☹️ swiftui will not let me do this, stupid hierarchy stupid swiftui rules
-                         FIXME: for now, it's called in AccountsView
-                            .alert(
-                                "Are you sure you want to sign out of Epic Games?",
-                                isPresented: $isEpicSignOutConfirmationAlertPresented
-                            ) {
-                                Button(role: .destructive) {
-                                    signOutAction()
-                                } label: {
-                                    Text("Sign Out")
-                                }
-                            }
-                         */
-                    } else {
-                        Button("Sign In", systemImage: "person", action: signInAction)
+        .alert(
+            "Are you sure you want to sign out of Epic Games?",
+            isPresented: $isEpicSignOutConfirmationAlertPresented
+        ) {
+            Button(role: .destructive) {
+                Task {
+                    do {
+                        try await Legendary.signOut()
+                    } catch {
+                        epicSignOutError = error
+                        isEpicSignOutErrorAlertPresented = true
                     }
                 }
-                .clipShape(.capsule)
-                .padding(.leading)
+            } label: {
+                Text("Sign Out")
             }
+        }
+        .sheet(item: $editingStorefront) { storefront in
+            VStack(alignment: .leading, spacing: 18) {
+                HStack {
+                    Text("Link \(storefront.description) Account")
+                        .font(.title3.weight(.bold))
+                    Spacer()
+                    Button("Close") {
+                        editingStorefront = nil
+                    }
+                }
+
+                Button {
+                    let target = storefront
+                    editingStorefront = nil
+                    switch target {
+                    case .steam:
+                        PlatformWebAuthViewModel.shared.showSignIn(for: .steam)
+                    case .electronicArts:
+                        PlatformWebAuthViewModel.shared.showSignIn(for: .electronicArts)
+                    case .gog:
+                        PlatformWebAuthViewModel.shared.showSignIn(for: .gog)
+                    default:
+                        break
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "globe")
+                        Text("Sign In via In-App Browser")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+
+                Text("Or enter your account credentials manually:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                VStack(spacing: 12) {
+                    TextField("Username / Persona Name", text: $usernameInput)
+                        .textFieldStyle(.roundedBorder)
+
+                    TextField("Account ID / Profile URL", text: $idInput)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                HStack {
+                    Button("Auto-Detect from Mac") {
+                        accountManager.autoDetectLocalAccounts()
+                        loadInputsFor(storefront)
+                    }
+
+                    Spacer()
+
+                    Button("Save") {
+                        saveInputsFor(storefront)
+                        editingStorefront = nil
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(usernameInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .padding(20)
+            .frame(width: 400)
+        }
+    }
+
+    private func storefrontCard(
+        title: String,
+        systemImage: String,
+        color: Color,
+        username: String?,
+        isConnected: Bool,
+        onConnect: @escaping () -> Void,
+        onDisconnect: @escaping () -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(color.opacity(0.18))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: systemImage)
+                        .font(.system(size: 18))
+                        .foregroundStyle(color)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+
+                    Text(isConnected ? "Connected as \(username ?? "User")" : "Not Linked")
+                        .font(.caption)
+                        .foregroundStyle(isConnected ? .green : .secondary)
+                }
+
+                Spacer()
+            }
+
+            HStack {
+                if isConnected {
+                    Button("Edit", action: onConnect)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+
+                    Button("Disconnect", role: .destructive, action: onDisconnect)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                } else {
+                    Button("Connect Account", action: onConnect)
+                        .buttonStyle(.borderedProminent)
+                        .tint(color.opacity(0.85))
+                        .controlSize(.small)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    private func startEditing(_ storefront: Game.Storefront) {
+        editingStorefront = storefront
+        loadInputsFor(storefront)
+    }
+
+    private func loadInputsFor(_ storefront: Game.Storefront) {
+        switch storefront {
+        case .steam:
+            usernameInput = accountManager.steamUsername
+            idInput = accountManager.steamID
+        case .electronicArts:
+            usernameInput = accountManager.eaUsername
+            idInput = accountManager.eaID
+        case .gog:
+            usernameInput = accountManager.gogUsername
+            idInput = accountManager.gogID
+        default:
+            usernameInput = ""
+            idInput = ""
+        }
+    }
+
+    private func saveInputsFor(_ storefront: Game.Storefront) {
+        switch storefront {
+        case .steam:
+            accountManager.saveSteam(username: usernameInput, id: idInput)
+            Task { try? await GameDataStore.shared.refreshFromStorefronts(.steam) }
+        case .electronicArts:
+            accountManager.saveEA(username: usernameInput, id: idInput)
+            Task { try? await GameDataStore.shared.refreshFromStorefronts(.electronicArts) }
+        case .gog:
+            accountManager.saveGOG(username: usernameInput, id: idInput)
+            Task { try? await GameDataStore.shared.refreshFromStorefronts(.gog) }
+        default:
+            break
         }
     }
 }
 
-#Preview {
-    AccountsView()
+extension Game.Storefront: Identifiable {
+    public var id: String { description }
 }

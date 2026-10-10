@@ -9,8 +9,6 @@
 
 import Foundation
 import SwiftUI
-import SemanticVersion
-import ColorfulX
 
 struct AboutView: View {
     @State private var colorfulAnimationColors: [Color] = [

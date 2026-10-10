@@ -9,8 +9,6 @@
 
 import Foundation
 import SwiftUI
-import SwordRPC
-import SemanticVersion
 
 struct SettingsView: View {
     var body: some View {
@@ -81,15 +79,7 @@ struct SettingsView: View {
             }
         }
         .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Tweaking some settings"
-                presence.state = "Configuring WinGame"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-
-                return presence
-            }())
+            
         }
     }
 }

@@ -9,7 +9,6 @@
 
 import Foundation
 import SwiftUI
-import Shimmer
 
 struct GameImageCard: View {
     var game: Game?

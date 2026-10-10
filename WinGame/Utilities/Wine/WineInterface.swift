@@ -9,7 +9,6 @@
 
 import Foundation
 import OSLog
-import SemanticVersion
 
 final class Wine { // TODO: https://forum.winehq.org/viewtopic.php?t=15416
     internal static let log = Logger(subsystem: Logger.subsystem, category: "wineInterface")

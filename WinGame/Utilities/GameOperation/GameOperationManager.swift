@@ -12,7 +12,6 @@ import OSLog
 import Observation
 import UserNotifications
 import AppKit
-import DockProgress
 
 @Observable @MainActor final class GameOperationManager {
     static var shared: GameOperationManager = .init()
@@ -28,8 +27,6 @@ import DockProgress
         didSet {
             if let currentOperation = self.queue.first(where: { $0.type.modifiesFiles && $0.isExecuting }) {
                 Task { @MainActor in
-                    DockProgress.style = .badge(color: .accentColor, badgeValue: { self.queue.filter({ $0.type.modifiesFiles }).count })
-                    DockProgress.progressInstance = currentOperation.progressKVOBridge._progress
                 }
             }
         }

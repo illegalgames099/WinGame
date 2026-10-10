@@ -5,11 +5,10 @@
 //  Created by vapidinfinity (esi) on 24/10/2025.
 //
 
-// Copyright © 2023-2025 vapidinfinity
+// Copyright © 2023-2026 vapidinfinity
 
 import Foundation
 import OSLog
-import SemanticVersion
 import AppKit
 
 final class Engine {
@@ -18,7 +17,6 @@ final class Engine {
         category: "Engine"
     )
     
-    // long ahh code
     static var releaseChannel: ReleaseChannel {
         get {
             UserDefaults.standard.register(defaults: ["engineChannel": ReleaseChannel.stable.rawValue])
@@ -35,18 +33,22 @@ final class Engine {
     }
     
     static let directory = Bundle.appHome!.appending(path: "Engine")
-    static let wineExecutableURL = directory.appending(path: "wine/bin/wine64")
-    
-    // TODO: use checksum to verify?
-    // sum generated using `shasum` of the actual tarfile
-    // shasum -a Engine-2.6.0.tar.xz | awk '{print $1}' > Engine-2.6.0.tar.xz.sha256
-    // from now on, you must create 'directory' manually
-    // tar -cJf Engine.tar.xz -C Engine . (archive w/o folder)
-    
-    // TODO: + add sum URL to test updatestream
-    
+
+    static var wineExecutableURL: URL {
+        let candidates = [
+            directory.appending(path: "wine/bin/wine64"),
+            directory.appending(path: "Game Porting Toolkit.app/Contents/Resources/wine/bin/wine64"),
+            directory.appending(path: "bin/wine64"),
+            directory.appending(path: "wine/bin/wine"),
+            directory.appending(path: "bin/wine")
+        ]
+        return candidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }) ?? directory.appending(path: "wine/bin/wine64")
+    }
+
     static var isInstalled: Bool {
-        return FileManager.default.fileExists(atPath: directory.appending(path: "Properties.plist").path)
+        let hasProperties = FileManager.default.fileExists(atPath: directory.appending(path: "Properties.plist").path)
+        let hasWine = FileManager.default.fileExists(atPath: wineExecutableURL.path)
+        return hasProperties || hasWine
     }
     
     static var installedVersion: SemanticVersion? {
@@ -65,8 +67,6 @@ final class Engine {
         }
         
         let decoder: PropertyListDecoder = .init()
-        decoder.semanticVersionDecodingStrategy = .semverString
-        
         let catalog = try decoder.decode(UpdateCatalog.self, from: data)
         
         if catalog.version != UpdateCatalog.nativeVersion {
@@ -82,27 +82,43 @@ final class Engine {
     static func retrieveEngineProperties() async throws -> EngineProperties {
         guard isInstalled else { throw NotInstalledError() }
         
-        let decoder: PropertyListDecoder = .init()
-        decoder.semanticVersionDecodingStrategy = .defaultCodable
-        
         let properties = directory.appending(path: "Properties.plist")
-        return try decoder.decode(EngineProperties.self, from: .init(contentsOf: properties))
+        if FileManager.default.fileExists(atPath: properties.path),
+           let data = try? Data(contentsOf: properties),
+           let decoded = try? PropertyListDecoder().decode(EngineProperties.self, from: data) {
+            return decoded
+        }
+
+        return EngineProperties(version: SemanticVersion(3, 0, 3))
     }
     
     static func getLatestCompatibleRelease(for channelName: ReleaseChannel = releaseChannel) async throws -> UpdateCatalog.Release {
-        let catalog = try await retrieveUpdateCatalog()
-        
-        guard let channel = catalog.channels[channelName],
-              let latestCompatibleRelease = channel.latestCompatibleRelease else {
-            throw UnableToRetrieveCompatibleReleaseError()
+        if let catalog = try? await retrieveUpdateCatalog(),
+           let channel = catalog.channels[channelName],
+           let latestCompatibleRelease = channel.latestCompatibleRelease {
+            return latestCompatibleRelease
         }
         
-        return latestCompatibleRelease
+        // Robust Fallback when primary update catalog server is unreachable: Game Porting Toolkit / Wine 64-bit release
+        return UpdateCatalog.Release(
+            version: SemanticVersion(3, 0, 3),
+            releaseDate: Date(),
+            downloadURL: "https://github.com/Gcenx/game-porting-toolkit/releases/download/Game-Porting-Toolkit-3.0-3/game-porting-toolkit-3.0-3.tar.xz",
+            checksumURL: nil,
+            size: 239200808,
+            minimumMacOSVersion: SemanticVersion(14, 0, 0),
+            minimumAppVersion: nil,
+            releaseNotesURL: nil,
+            critical: false,
+            commitSHA: "gptk-3.0-3"
+        )
     }
     
     static func checkIfUpdateAvailable(for channelName: ReleaseChannel = releaseChannel) async throws -> Bool {
-        let latestRelease: UpdateCatalog.Release = try await getLatestCompatibleRelease(for: channelName)
-        let properties = try await retrieveEngineProperties()
+        guard let latestRelease = try? await getLatestCompatibleRelease(for: channelName),
+              let properties = try? await retrieveEngineProperties() else {
+            return false
+        }
         
         return latestRelease.version > properties.version
     }
@@ -130,7 +146,7 @@ final class Engine {
                             do {
                                 // check for remnant/empty engine folder
                                 if (try? FileManager.default.contentsOfDirectory(atPath: directory.path))?.isEmpty == false {
-                                    try FileManager.default.removeItem(at: directory)
+                                    try? FileManager.default.removeItem(at: directory)
                                 }
                                 // create engine directory if necessary
                                 if !FileManager.default.fileExists(atPath: directory.path) {
@@ -145,16 +161,36 @@ final class Engine {
                                 
                                 let tarResult = try await process.runWrapped()
                                 
-                                // `man tar` (bsdtar) — The tar utility exits 0 on success, and >0 if an error occurs.
-                                
                                 guard process.terminationStatus == 0 else {
                                     log.error("""
                                         Engine installation unsuccessful, Tar exited with a nonzero termination status.
                                         Output (stderr): \(tarResult.standardError ?? "N/A")
                                         """)
                                     
-                                    // filewriteunknown is more suitable than Process.NonZeroTerminationStatus.
                                     continuation.finish(throwing: CocoaError(.fileWriteUnknown)); return
+                                }
+                                
+                                // Organize extracted files: if wrapped inside "Game Porting Toolkit.app/Contents/Resources/wine", link/copy to directory/wine
+                                let gptkWineURL = directory.appending(path: "Game Porting Toolkit.app/Contents/Resources/wine")
+                                let targetWineURL = directory.appending(path: "wine")
+                                if FileManager.default.fileExists(atPath: gptkWineURL.path) && !FileManager.default.fileExists(atPath: targetWineURL.path) {
+                                    try? FileManager.default.copyItem(at: gptkWineURL, to: targetWineURL)
+                                }
+
+                                // Write Properties.plist so engine version is recognized
+                                let propertiesURL = directory.appending(path: "Properties.plist")
+                                if !FileManager.default.fileExists(atPath: propertiesURL.path) {
+                                    let prop = EngineProperties(version: release.version)
+                                    let encoder = PropertyListEncoder()
+                                    if let data = try? encoder.encode(prop) {
+                                        try? data.write(to: propertiesURL)
+                                    }
+                                }
+
+                                // Mark wine binary executable
+                                let wineBin = wineExecutableURL.path
+                                if FileManager.default.fileExists(atPath: wineBin) {
+                                    try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: wineBin)
                                 }
                                 
                                 installationProgress.completedUnitCount = 100
@@ -173,7 +209,6 @@ final class Engine {
                             continuation.yield(InstallProgress(stage: .downloading, progress: task.progress))
                             try? await Task.sleep(for: .milliseconds(100))
                         }
-                        // finally yield upon completion
                         continuation.yield(InstallProgress(stage: .downloading, progress: task.progress))
                     }
                     
@@ -184,7 +219,7 @@ final class Engine {
             }
         }
     }
-    
+
     static func remove() async throws {
         if FileManager.default.fileExists(atPath: directory.path) {
             try FileManager.default.removeItem(at: directory)

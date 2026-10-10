@@ -10,7 +10,6 @@
 import Foundation
 import SwiftUI
 import OSLog
-import Shimmer
 
 extension GameCard {
     struct ImageURLModifierView: View {

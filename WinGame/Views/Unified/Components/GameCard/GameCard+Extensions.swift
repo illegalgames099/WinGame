@@ -233,15 +233,6 @@ extension GameCard {
                     }
                 }
                 .help("Modify settings for \"\(game.title)\"")
-                // FIXME: unable to propagate in menuview - this view is not in the hierarchy if called by `Menu`.
-                // FIXME: you must add the sheet below to whatever view you call this button in!!
-                /*
-                 .sheet(isPresented: $isGameSettingsSheetPresented) {
-                 GameSettingsView(game: $game, isPresented: $isGameSettingsSheetPresented)
-                 .padding()
-                 .frame(minWidth: 750)
-                 }
-                 */
             }
         }
 
@@ -304,13 +295,6 @@ extension GameCard {
                         hoveringOverDestructiveButton = hovering
                     }
                 }
-                // FIXME: unable to propagate in menuview - this view is not in the hierarchy if called by `Menu` smh so much for modularity.
-                // FIXME: you must add the sheet below to whatever view you call this button in!!
-                /*
-                 .sheet(isPresented: $isUninstallSheetPresented) {
-                 UninstallGameView(game: $game, isPresented: $isUninstallSheetPresented)
-                 }
-                 */
             }
         }
     }
@@ -334,7 +318,7 @@ extension GameCard {
                 }
                 .sheet(isPresented: $isGameSettingsSheetPresented) {
                     GameSettingsView(game: $game, isPresented: $isGameSettingsSheetPresented)
-                        .frame(width: 700, height: 380)
+                        .frame(minWidth: 760, idealWidth: 840, minHeight: 620, idealHeight: 740)
                 }
                 .customTransform { view in
                     if #unavailable(macOS 26.0) {

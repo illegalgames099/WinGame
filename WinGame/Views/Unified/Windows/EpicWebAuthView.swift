@@ -5,9 +5,10 @@
 //  Created by vapidinfinity (esi) on 11/10/24.
 //
 
+// Copyright © 2023-2026 vapidinfinity
+
 import SwiftUI
 import WebKit
-import SwiftyJSON
 import OSLog
 
 struct EpicWebAuthView: View {
@@ -21,10 +22,81 @@ struct EpicWebAuthView: View {
     @State private var isSigninErrorPresented: Bool = false
     @State private var signInError: Error?
     @State private var authKey: String = .init()
+    @State private var manualCodeInput: String = ""
+    @State private var manualUsernameInput: String = ""
+    @State private var isManualInputExpanded: Bool = false
 
     var body: some View {
-        EpicInterceptorWebView(viewModel: viewModel, isWebAuthViewBlurred: $isBlurred, completion: { authKey = $0 })
-            .blur(radius: (isBlurred || isWorking) ? 30 : 0)
+        VStack(spacing: 0) {
+            EpicInterceptorWebView(viewModel: viewModel, isWebAuthViewBlurred: $isBlurred, completion: { authKey = $0 })
+                .blur(radius: (isBlurred || isWorking) ? 30 : 0)
+
+            Divider()
+
+            HStack {
+                Button {
+                    withAnimation {
+                        isManualInputExpanded.toggle()
+                    }
+                } label: {
+                    Label(
+                        isManualInputExpanded ? "Hide Manual Entry" : "Manual Authorization Code / Username",
+                        systemImage: "key.fill"
+                    )
+                    .font(.caption)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                if isWorking {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Authenticating...")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+
+            if isManualInputExpanded {
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        TextField("Paste 32-character authorization code", text: $manualCodeInput)
+                            .textFieldStyle(.roundedBorder)
+
+                        Button("Submit Code") {
+                            handleAuthKeyChange(manualCodeInput.trimmingCharacters(in: .whitespacesAndNewlines))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(manualCodeInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+
+                    HStack(spacing: 8) {
+                        TextField("Or enter Epic Display Name directly", text: $manualUsernameInput)
+                            .textFieldStyle(.roundedBorder)
+
+                        Button("Connect Account") {
+                            let name = manualUsernameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !name.isEmpty else { return }
+                            StorefrontAccountManager.shared.saveEpic(username: name)
+                            viewModel.signInSuccess = true
+                            viewModel.closeSignInWindow()
+                            Task { @MainActor in
+                                try? await gameDataStore.refreshFromStorefronts(.epicGames)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(manualUsernameInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
+                .background(.ultraThinMaterial)
+            }
+        }
             .onChange(of: authKey, { handleAuthKeyChange($1) })
             .onAppear {
                 viewModel.signInSuccess = false
@@ -58,9 +130,11 @@ struct EpicWebAuthView: View {
 
         Task {
             do {
-                try await Legendary.signIn(authKey: newAuthKey)
+                let user = try await Legendary.signIn(authKey: newAuthKey)
+                StorefrontAccountManager.shared.saveEpic(username: user)
                 viewModel.signInSuccess = true
                 viewModel.closeSignInWindow()
+                try? await gameDataStore.refreshFromStorefronts(.epicGames)
             } catch {
                 signInError = error
                 isSigninErrorPresented = true
@@ -93,11 +167,6 @@ final class EpicWebAuthViewModel: NSObject, ObservableObject, NSWindowDelegate, 
             }
             window.makeKeyAndOrderFront(nil)
             isEpicSignInWindowVisible = window.isVisible
-            return
-        }
-
-        guard !Legendary.isSignedIn else {
-            Logger.app.warning("User is already signed in, skipping sign-in window")
             return
         }
 

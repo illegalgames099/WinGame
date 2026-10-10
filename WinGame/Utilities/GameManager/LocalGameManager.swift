@@ -79,7 +79,22 @@ class LocalGameManager {
                     throw CocoaError(.serviceApplicationLaunchFailed)
                 }
             case .windows:
-                guard let containerURL = game.containerURL else { throw Wine.Container.DoesNotExistError() }
+                guard Engine.isInstalled else {
+                    throw Engine.NotInstalledError()
+                }
+
+                let containerURL: URL
+                if let existing = game.containerURL, Wine.containerExists(at: existing) {
+                    containerURL = existing
+                } else if let firstExisting = Wine.containerURLs.first(where: { Wine.containerExists(at: $0) }) {
+                    containerURL = firstExisting
+                    game.containerURL = firstExisting
+                } else {
+                    let defaultContainer = try await Wine.createContainer(name: "Default")
+                    containerURL = defaultContainer.url
+                    game.containerURL = containerURL
+                }
+
                 let container = try Wine.getContainerObject(at: containerURL)
 
                 var environment: [String: String] = .init()
@@ -90,13 +105,17 @@ class LocalGameManager {
                 }
                 
                 let process: Process = .init()
+                process.currentDirectoryURL = location.deletingLastPathComponent()
                 process.arguments = [location.path] + game.launchArguments
                 process.environment = environment
                 Wine.transformProcess(process, containerURL: containerURL)
                 
-                try process.run()
-                
-                process.waitUntilExit()
+                try await withTaskCancellationHandler {
+                    try process.run()
+                    process.waitUntilExit()
+                } onCancel: {
+                    process.terminate()
+                }
             }
         }
 

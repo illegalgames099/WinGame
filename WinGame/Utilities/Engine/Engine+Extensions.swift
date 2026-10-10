@@ -8,7 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import Foundation
-import SemanticVersion
 
 extension Engine {
     enum InstallStage {

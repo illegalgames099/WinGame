@@ -8,7 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import SwordRPC
 import OSLog
 import UniformTypeIdentifiers
 
@@ -173,14 +172,7 @@ struct EpicGamesGameImportView: View {
             if !$1 { errorDescription = .init() }
         }
         .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence = RichPresence()
-                presence.details = "Importing & Configuring \"\(game.title)\"."
-                presence.state = "Importing \(game.title)"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-                return presence
-            }())
+            
         }
     }
 }

@@ -10,8 +10,15 @@
 import SwiftUI
 
 struct ContainerSettingsView: View {
+    enum SectionScope {
+        case all
+        case compatibilityOnly
+        case graphicsOnly
+    }
+
     @Binding var selectedContainerURL: URL?
     var withPicker: Bool
+    var sectionScope: SectionScope = .all
 
     @ObservedObject private var variables: VariableManager = .shared
 
@@ -66,7 +73,7 @@ struct ContainerSettingsView: View {
     }
 
     var body: some View {
-        if withPicker {
+        if withPicker && (sectionScope == .all || sectionScope == .compatibilityOnly) {
             if variables.getVariable("booting") != true {
                 Picker("Current Container", selection: $selectedContainerURL) {
                     ForEach(Wine.containerObjects) { container in
@@ -87,118 +94,126 @@ struct ContainerSettingsView: View {
         if let selectedContainerURL,
            let container = try? Wine.getContainerObject(at: selectedContainerURL) {
             Group {
-                Toggle("Performance HUD", isOn: Binding(
-                    get: { container.settings.metalHUD },
-                    set: { container.settings.metalHUD = $0 }
-                ))
-                .disabled(variables.getVariable("booting") == true)
-
-                Toggle("Retina Mode", isOn: $retinaMode)
+                if sectionScope == .all || sectionScope == .graphicsOnly {
+                    Toggle("Performance HUD", isOn: Binding(
+                        get: { container.settings.metalHUD },
+                        set: { container.settings.metalHUD = $0 }
+                    ))
                     .disabled(variables.getVariable("booting") == true)
-                    .task(priority: .high) {
-                        // asynchronously fetch retina mode status upon view presentation
-                        await fetchRetinaModeStatus()
-                    }
+                }
+
+                if sectionScope == .all || sectionScope == .compatibilityOnly {
+                    Toggle("Retina Mode", isOn: $retinaMode)
+                        .disabled(variables.getVariable("booting") == true)
+                        .task(priority: .high) {
+                            // asynchronously fetch retina mode status upon view presentation
+                            await fetchRetinaModeStatus()
+                        }
+                        .withOperationStatus(
+                            operating: $modifyingRetinaMode,
+                            successful: $retinaModeSuccess,
+                            observing: $retinaMode,
+                            placement: .leading
+                        ) {
+                            try? await Wine.toggleRetinaMode(containerURL: container.url, toggle: retinaMode)
+                            container.settings.retinaMode = retinaMode
+                            retinaModeSuccess = true
+                        }
+
+                    Toggle("Enhanced Sync (MSync)", isOn: Binding(
+                        get: { container.settings.msync },
+                        set: { container.settings.msync = $0 }
+                    ))
+                    .disabled(variables.getVariable("booting") == true)
+
+                    Toggle("Advanced Vector Extensions (AVX2)", isOn: Binding(
+                        get: { container.settings.avx2 },
+                        set: { container.settings.avx2 = $0 }
+                    ))
+                    .disabled({
+                        if #available(macOS 15.0, *) {
+                            return false
+                        }
+                        return true
+                    }())
+                    .help({
+                        guard #unavailable(macOS 15.0) else { return "" }
+                        return "AVX2 is only supported on macOS Sequoia (15) or later."
+                    }())
+                }
+
+                if sectionScope == .all || sectionScope == .graphicsOnly {
+                    Toggle("DXVK", isOn: Binding(
+                        get: { container.settings.dxvk },
+                        set: { _ in
+                            isDXVKDisclaimerPresented = true
+                        }
+                    ))
                     .withOperationStatus(
-                        operating: $modifyingRetinaMode,
-                        successful: $retinaModeSuccess,
-                        observing: $retinaMode,
-                        placement: .leading
-                    ) {
-                        try? await Wine.toggleRetinaMode(containerURL: container.url, toggle: retinaMode)
-                        container.settings.retinaMode = retinaMode
-                        retinaModeSuccess = true
-                    }
+                        operating: $modifyingDXVK,
+                        successful: $dxvkSuccess,
+                        observing: .constant(false),
+                        placement: .leading,
+                        action: { /* handled by alert presentation */ }
+                    )
+                    .alert("Quit games running in this container?",
+                           isPresented: $isDXVKDisclaimerPresented) {
+                        Button("OK", role: .destructive) {
+                            Task(priority: .userInitiated) {
+                                modifyingDXVK = true
+                                defer { modifyingDXVK = false }
 
-                Toggle("Enhanced Sync (MSync)", isOn: Binding(
-                    get: { container.settings.msync },
-                    set: { container.settings.msync = $0 }
-                ))
-                .disabled(variables.getVariable("booting") == true)
-
-                Toggle("Advanced Vector Extensions (AVX2)", isOn: Binding(
-                    get: { container.settings.avx2 },
-                    set: { container.settings.avx2 = $0 }
-                ))
-                .disabled({
-                    if #available(macOS 15.0, *) {
-                        return false
-                    }
-                    return true
-                }())
-                .help({
-                    guard #unavailable(macOS 15.0) else { return "" }
-                    return "AVX2 is only supported on macOS Sequoia (15) or later."
-                }())
-
-                Toggle("DXVK", isOn: Binding(
-                    get: { container.settings.dxvk },
-                    set: { _ in
-                        isDXVKDisclaimerPresented = true
-                    }
-                ))
-                .withOperationStatus(
-                    operating: $modifyingDXVK,
-                    successful: $dxvkSuccess,
-                    observing: .constant(false),
-                    placement: .leading,
-                    action: { /* handled by alert presentation */ }
-                )
-                .alert("Quit games running in this container?",
-                       isPresented: $isDXVKDisclaimerPresented) {
-                    Button("OK", role: .destructive) {
-                        Task(priority: .userInitiated) {
-                            modifyingDXVK = true
-                            defer { modifyingDXVK = false }
-
-                            do {
-                                if container.settings.dxvk {
-                                    try await Wine.boot(at: container.url, parameters: .update)
-                                } else {
-                                    try await Wine.DXVK.install(toContainerAtURL: container.url)
+                                do {
+                                    if container.settings.dxvk {
+                                        try await Wine.boot(at: container.url, parameters: .update)
+                                    } else {
+                                        try await Wine.DXVK.install(toContainerAtURL: container.url)
+                                    }
+                                    container.settings.dxvk.toggle()
+                                    dxvkSuccess = true
+                                } catch {
+                                    dxvkSuccess = false
                                 }
-                                container.settings.dxvk.toggle()
-                                dxvkSuccess = true
-                            } catch {
-                                dxvkSuccess = false
                             }
                         }
+
+                        Button("Cancel", role: .cancel, action: {})
+                    } message: {
+                        Text("""
+                            To toggle DXVK, WinGame must quit all games currently running in this container.
+                            Additionally, D3DMetal will be disabled.
+                            
+                            Toggling DXVK may impact compatibility positively or negatively.
+                            """)
                     }
 
-                    Button("Cancel", role: .cancel, action: {})
-                } message: {
-                    Text("""
-                        To toggle DXVK, WinGame must quit all games currently running in this container.
-                        Additionally, D3DMetal will be disabled.
-                        
-                        Toggling DXVK may impact compatibility positively or negatively.
-                        """)
+                    Toggle("Asynchronous DXVK", isOn: Binding(
+                        get: { container.settings.dxvkAsync },
+                        set: { container.settings.dxvkAsync = $0 }
+                    ))
+                    .disabled(!container.settings.dxvk || modifyingDXVK)
                 }
 
-                Toggle("Asynchronous DXVK", isOn: Binding(
-                    get: { container.settings.dxvkAsync },
-                    set: { container.settings.dxvkAsync = $0 }
-                ))
-                .disabled(!container.settings.dxvk || modifyingDXVK)
-
-                Picker("Windows Version", selection: $windowsVersion) {
-                    ForEach(Wine.WindowsVersion.allCases, id: \.self) { version in
-                        Text("Windows® \(version.rawValue)").tag(version)
+                if sectionScope == .all || sectionScope == .compatibilityOnly {
+                    Picker("Windows Version", selection: $windowsVersion) {
+                        ForEach(Wine.WindowsVersion.allCases, id: \.self) { version in
+                            Text("Windows® \(version.rawValue)").tag(version)
+                        }
                     }
-                }
-                .task(priority: .high) {
-                    // asynchronously fetch windows version upon view presentation
-                    await fetchWindowsVersion()
-                }
-                .withOperationStatus(
-                    operating: $modifyingWindowsVersion,
-                    successful: $windowsVersionSuccess,
-                    observing: $windowsVersion,
-                    placement: .leading
-                ) {
-                    try await Wine.setWindowsVersion(containerURL: container.url, version: windowsVersion)
-                    container.settings.windowsVersion = windowsVersion
-                    windowsVersionSuccess = true
+                    .task(priority: .high) {
+                        // asynchronously fetch windows version upon view presentation
+                        await fetchWindowsVersion()
+                    }
+                    .withOperationStatus(
+                        operating: $modifyingWindowsVersion,
+                        successful: $windowsVersionSuccess,
+                        observing: $windowsVersion,
+                        placement: .leading
+                    ) {
+                        try await Wine.setWindowsVersion(containerURL: container.url, version: windowsVersion)
+                        container.settings.windowsVersion = windowsVersion
+                        windowsVersionSuccess = true
+                    }
                 }
             }
             .disabled(!Engine.isInstalled)

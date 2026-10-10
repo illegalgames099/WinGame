@@ -5,7 +5,7 @@
 //  Created by vapidinfinity (esi) on 2/12/2025.
 //
 
-// Copyright © 2023-2025 vapidinfinity
+// Copyright © 2023-2026 vapidinfinity
 
 import Foundation
 import Combine
@@ -70,33 +70,118 @@ import OSLog
         // if variadics are empty, default to all cases
         let storefronts = storefronts.isEmpty ? Game.Storefront.allCases : storefronts as [Game.Storefront]
         
-        // legendary (epic games)
+        // MARK: - Epic Games
         if storefronts.contains(.epicGames) {
             do {
-                let installables = try Legendary.getInstallableGames()
-                let installed = try Legendary.getInstalledGames()
-                
-                // add installables that aren't installed
-                for game in installables where !installed.contains(where: { $0 == game }) {
-                    library.update(with: game)
-                }
-                
-                // installed: merge instead of overwrite
-                for fetchedGame in installed {
-                    if let existing = library.first(where: { $0 == fetchedGame }) {
-                        try existing.merge(with: fetchedGame, requiring: .identicalIgnoredKeys)
-                        library.update(with: existing)
-                    } else {
-                        library.update(with: fetchedGame)
+                if Legendary.isSignedIn {
+                    await Legendary.updateMetadata(forced: false)
+                    let installables = (try? Legendary.getInstallableGames()) ?? []
+                    let installed = (try? Legendary.getInstalledGames()) ?? []
+                    
+                    // Add uninstalled games
+                    for game in installables where !installed.contains(where: { $0.id == game.id }) {
+                        if let existing = library.first(where: { $0.id == game.id && $0.storefront == .epicGames }) {
+                            if case .uninstalled = existing.installationState {
+                                library.update(with: game)
+                            }
+                        } else {
+                            library.update(with: game)
+                        }
+                    }
+                    
+                    // Add/merge installed games
+                    for fetchedGame in installed {
+                        if let existing = library.first(where: { $0.id == fetchedGame.id && $0.storefront == .epicGames }) {
+                            try? existing.merge(with: fetchedGame, requiring: .identicalIgnoredKeys)
+                            library.update(with: existing)
+                        } else {
+                            library.update(with: fetchedGame)
+                        }
                     }
                 }
             } catch {
                 log.error("Unable to refresh game data from Epic Games: \(error.localizedDescription)")
-                throw error
             }
         }
         
-        // TODO: others
-        // if storefronts.contains(...) { ... }
+        // MARK: - Steam
+        if storefronts.contains(.steam) {
+            let localSteamGames = SteamGameManager.scanLocalInstalledGames()
+            for game in localSteamGames {
+                if let existing = library.first(where: { $0.id == game.id && $0.storefront == .steam }) {
+                    try? existing.merge(with: game, requiring: .identicalIgnoredKeys)
+                    library.update(with: existing)
+                } else {
+                    library.update(with: game)
+                }
+            }
+
+            let steamID = StorefrontAccountManager.shared.steamID
+            if !steamID.isEmpty {
+                let ownedGames = await SteamGameManager.fetchOwnedGames(steamID: steamID)
+                for game in ownedGames {
+                    if let existing = library.first(where: { $0.id == game.id && $0.storefront == .steam }) {
+                        // Keep existing state if already installed
+                        if case .uninstalled = existing.installationState {
+                            library.update(with: game)
+                        }
+                    } else {
+                        library.update(with: game)
+                    }
+                }
+            }
+        }
+
+        // MARK: - GOG
+        if storefronts.contains(.gog) {
+            let localGOGGames = GOGGameManager.scanLocalInstalledGames()
+            for game in localGOGGames {
+                if let existing = library.first(where: { $0.id == game.id && $0.storefront == .gog }) {
+                    try? existing.merge(with: game, requiring: .identicalIgnoredKeys)
+                    library.update(with: existing)
+                } else {
+                    library.update(with: game)
+                }
+            }
+
+            if StorefrontAccountManager.shared.isGOGConnected {
+                let ownedGames = await GOGGameManager.fetchOwnedGames()
+                for game in ownedGames {
+                    if let existing = library.first(where: { $0.id == game.id && $0.storefront == .gog }) {
+                        if case .uninstalled = existing.installationState {
+                            library.update(with: game)
+                        }
+                    } else {
+                        library.update(with: game)
+                    }
+                }
+            }
+        }
+
+        // MARK: - Electronic Arts (EA)
+        if storefronts.contains(.electronicArts) {
+            let localEAGames = EAGameManager.scanLocalInstalledGames()
+            for game in localEAGames {
+                if let existing = library.first(where: { $0.id == game.id && $0.storefront == .electronicArts }) {
+                    try? existing.merge(with: game, requiring: .identicalIgnoredKeys)
+                    library.update(with: existing)
+                } else {
+                    library.update(with: game)
+                }
+            }
+
+            if StorefrontAccountManager.shared.isEAConnected {
+                let ownedGames = await EAGameManager.fetchLibraryGames()
+                for game in ownedGames {
+                    if let existing = library.first(where: { $0.id == game.id && $0.storefront == .electronicArts }) {
+                        if case .uninstalled = existing.installationState {
+                            library.update(with: game)
+                        }
+                    } else {
+                        library.update(with: game)
+                    }
+                }
+            }
+        }
     }
 }

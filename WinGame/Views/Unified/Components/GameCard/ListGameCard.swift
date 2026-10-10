@@ -8,14 +8,13 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import Glur
-import Shimmer
 
 struct ListGameCard: View {
     @Binding var game: Game
     
     @State private var isImageEmpty: Bool = true
     @State private var isCardExpanded: Bool = false
+    @State private var isDetailsPresented: Bool = false
     
     static let defaultHeight: CGFloat = 120
     
@@ -29,10 +28,12 @@ struct ListGameCard: View {
                            height: geometry.size.height,
                            alignment: .center)
                     .conditionalTransform(if: isCardExpanded) { view in
-                        view.glur(radius: 18,
-                                  offset: 0.6,
-                                  interpolation: 0.6)
+                        view.winGlassEffect()
                     }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isDetailsPresented = true
             }
             
             HStack {
@@ -50,6 +51,10 @@ struct ListGameCard: View {
                     }
                 }
                 .foregroundStyle(isImageEmpty ? .primary : Color.white)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    isDetailsPresented = true
+                }
                 
                 Spacer()
                 
@@ -58,7 +63,7 @@ struct ListGameCard: View {
                         .clipShape(.capsule)
                         .foregroundStyle(isImageEmpty ? .primary : Color.white)
                 }
-                .frame(maxWidth: 250, alignment: .trailing) // TODO: match operationcard in terms of progressview width limit
+                .frame(maxWidth: 250, alignment: .trailing)
             }
             .geometryGroup()
             .padding()
@@ -71,6 +76,10 @@ struct ListGameCard: View {
             if !isImageEmpty {
                 withAnimation { isCardExpanded = hovering }
             }
+        }
+        .sheet(isPresented: $isDetailsPresented) {
+            GameSettingsView(game: $game, isPresented: $isDetailsPresented)
+                .frame(minWidth: 760, idealWidth: 840, minHeight: 620, idealHeight: 740)
         }
     }
 }

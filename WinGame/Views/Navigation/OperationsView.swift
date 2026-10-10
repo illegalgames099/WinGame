@@ -5,86 +5,65 @@
 //  Created by vapidinfinity (esi) on 5/4/2024.
 //
 
-// Copyright © 2023-2025 vapidinfinity
+// Copyright © 2023-2026 vapidinfinity
 
 import SwiftUI
-import Shimmer
-import SwordRPC
 
 struct OperationsView: View {
     @Bindable private var operationManager: GameOperationManager = .shared
-    
+
     var body: some View {
-        Group {
-            if !operationManager.queue.isEmpty {
-                GeometryReader { geometry in
-                    ScrollView {
-                        VStack {
-                            if let prominentOperation = operationManager.queue.first(where: { $0.isExecuting && $0.type.modifiesFiles }) {
-                                ProminentOperationCard(operation: .constant(prominentOperation))
-                                    .frame(width: geometry.size.width, height: geometry.size.height * 0.75)
-                                    .customTransform { view in
-                                        if #available(macOS 26.0, *) {
-                                            view.backgroundExtensionEffect()
-                                        } else {
-                                            view
-                                        }
-                                    }
-                                
-                                Divider()
-                            }
-                            
-                            let nonProminentOperations = operationManager.queue.filter({ $0 != operationManager.queue.first(where: { $0.isExecuting && $0.type.modifiesFiles }) })
-                            
-                            if nonProminentOperations.isEmpty {
-                                ContentUnavailableView(
-                                    "No new game operations are queued.",
-                                    systemImage: "checkmark",
-                                    description: .init("If you attempt to download more than one game at the same time, it'll be added to this queue.")
-                                )
-                            } else {
-                                ForEach(nonProminentOperations) { operation in
-                                    OperationCard(operation: .constant(operation))
-                                }
-                            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                // Header
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Downloads & Tasks")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.white)
+
+                    Text("Active game downloads, verification, and Wine engine background operations.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                if operationManager.queue.isEmpty {
+                    VStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.05))
+                                .frame(width: 76, height: 76)
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.green)
+                        }
+
+                        VStack(spacing: 6) {
+                            Text("All Operations Complete")
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(.white)
+
+                            Text("No pending game downloads or Wine configuration tasks in progress.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 320)
+                    .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 18))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    }
+                } else {
+                    VStack(spacing: 16) {
+                        ForEach(operationManager.queue) { operation in
+                            OperationCard(operation: .constant(operation))
                         }
                     }
                 }
-                .padding()
-            } else {
-                ContentUnavailableView(
-                    "No new operations! 😁",
-                    systemImage: "checkmark",
-                    description: Text("""
-                        All game operations that may have been pending are complete.
-                        You may access downloaded games in your [\(Image(systemName: "books.vertical")) Library].
-                        """)
-                )
+
+                Spacer()
             }
-        }
-        .ignoresSafeArea(edges: .top)
-        .customTransform { view in
-            if #available(macOS 15.0, *) {
-                view
-                    .toolbar(removing: .title)
-                    .toolbarBackgroundVisibility(.hidden) // dirtyfixes toolbar reappearance on view reload in navigationsplitview
-            } else {
-                view
-                    .toolbarBackground(.hidden) // dirtyfixes toolbar reappearance on view reload in navigationsplitview
-            }
-        }
-        
-        .navigationTitle("Operations")
-        .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Waiting for games to finish operating"
-                presence.state = "Viewing Operations"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-                
-                return presence
-            }())
+            .padding(32)
         }
     }
 }

@@ -8,7 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import SwordRPC
 import WebKit
 
 struct StoreView: View {
@@ -32,15 +31,7 @@ struct StoreView: View {
         .navigationTitle("Store")
 
         .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Currently browsing \(url)"
-                presence.state = "Looking for games to purchase"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-                
-                return presence
-            }())
+            
         }
         
         .toolbar {

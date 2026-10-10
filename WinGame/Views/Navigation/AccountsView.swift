@@ -8,7 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import SwordRPC
 
 struct AccountsView: View {
     @ObservedObject private var epicWebAuthViewModel: EpicWebAuthViewModel = .shared
@@ -81,15 +80,7 @@ struct AccountsView: View {
         .padding()
         .navigationTitle("Accounts")
         .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Currently in the accounts section."
-                presence.state = "Checking out all their accounts"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-
-                return presence
-            }())
+            
         }
     }
 }

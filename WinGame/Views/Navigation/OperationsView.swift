@@ -8,8 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import Shimmer
-import SwordRPC
 
 struct OperationsView: View {
     @Bindable private var operationManager: GameOperationManager = .shared
@@ -76,15 +74,7 @@ struct OperationsView: View {
         
         .navigationTitle("Operations")
         .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Waiting for games to finish operating"
-                presence.state = "Viewing Operations"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-                
-                return presence
-            }())
+            
         }
     }
 }

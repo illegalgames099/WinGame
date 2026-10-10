@@ -10,8 +10,6 @@
 
 import Foundation
 import SwiftUI
-import ColorfulX
-import SwordRPC
 
 struct OnboardingView: View {
     @StateObject var viewModel: ViewModel = .init()
@@ -181,15 +179,7 @@ struct OnboardingView: View {
         .foregroundStyle(.white)
         .navigationTitle("WinGame Setup")
         .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Getting WinGame set up"
-                presence.state = "Onboarding"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-
-                return presence
-            }())
+            
         }
     }
 }

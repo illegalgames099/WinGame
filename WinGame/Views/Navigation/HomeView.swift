@@ -9,9 +9,6 @@
 
 import SwiftUI
 import Cocoa
-import Glur
-import Shimmer
-import SwordRPC
 
 /**
  The main view displaying the home screen of the WinGame app.
@@ -36,121 +33,134 @@ struct HomeView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                if let recentGame = gameDataStore.recent {
-                    ZStack(alignment: .bottomLeading) {
-                        GameImageCard(url: recentGame.horizontalImageURL, isImageEmpty: $isImageEmpty)
-                            .aspectRatio(16/9, contentMode: .fill)
-                            .frame(width: geometry.size.width, height: geometry.size.height * 0.75)
-                            .glur(radius: 18,
-                                  offset: 0.6,
-                                  interpolation: 0.6)
-                            .customTransform { view in
-                                if #available(macOS 26.0, *) {
-                                    view.backgroundExtensionEffect()
-                                } else {
-                                    view
+                VStack(spacing: 24) {
+                    if let recentGame = gameDataStore.recent {
+                        ZStack(alignment: .bottomLeading) {
+                            GameImageCard(url: recentGame.horizontalImageURL, isImageEmpty: $isImageEmpty)
+                                .aspectRatio(16/9, contentMode: .fill)
+                                .frame(width: geometry.size.width - 40, height: geometry.size.height * 0.6)
+                                .clipped()
+                                .overlay {
+                                    LinearGradient(
+                                        colors: [.black.opacity(0.9), .black.opacity(0.4), .clear],
+                                        startPoint: .bottom,
+                                        endPoint: .top
+                                    )
                                 }
-                            }
+                                .customTransform { view in
+                                    if #available(macOS 26.0, *) {
+                                        view.glassEffect()
+                                    } else {
+                                        view
+                                    }
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                                .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 8)
 
-                        HStack {
-                            if isImageEmpty, recentGame.isFallbackImageAvailable {
-                                GameImageCard.FallbackGameImageCard(game: .constant(recentGame))
-                                    .frame(width: 65, height: 65)
-                                    .scaledToFit()
-                                    .padding(.trailing)
-                            }
-                            
-                            VStack(alignment: .leading) {
-                                Text("CONTINUE PLAYING")
-                                    .foregroundStyle(.secondary)
-                                    .font(.caption)
+                            HStack {
+                                if isImageEmpty, recentGame.isFallbackImageAvailable {
+                                    GameImageCard.FallbackGameImageCard(game: .constant(recentGame))
+                                        .frame(width: 80, height: 80)
+                                        .scaledToFit()
+                                        .shadow(radius: 5)
+                                        .padding(.trailing, 8)
+                                }
                                 
-                                HStack {
-                                    GameCard.TitleAndInformationView(game: .constant(recentGame), withSubscriptedInfo: true)
-                                }
-                                HStack {
-                                    GameCard.ButtonsView(game: .constant(recentGame), withLabel: true)
-                                        .clipShape(.capsule)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("CONTINUE PLAYING")
+                                        .foregroundStyle(.white.opacity(0.8))
+                                        .font(.caption.weight(.semibold))
+                                        .kerning(1.2)
+                                    
+                                    HStack {
+                                        GameCard.TitleAndInformationView(game: .constant(recentGame), withSubscriptedInfo: true)
+                                            .font(.title.weight(.bold))
+                                            .foregroundStyle(.white)
+                                    }
+                                    HStack {
+                                        GameCard.ButtonsView(game: .constant(recentGame), withLabel: true)
+                                            .clipShape(.capsule)
+                                            .controlSize(.large)
+                                            .padding(.top, 4)
+                                    }
                                 }
                             }
-                            .conditionalTransform(if: !isImageEmpty) { view in
-                                view
-                                    .foregroundStyle(.white)
+                            .padding(24)
+                        }
+                        .padding(.top, 20)
+                    } else {
+                        ContentUnavailableView(
+                            "Welcome to WinGame!",
+                            systemImage: "hand.wave",
+                            description: .init("""
+                            This area is where your most recently played game will appear — try launching one now!
+                            """)
+                        )
+                        .frame(
+                            width: geometry.size.width - 40,
+                            height: geometry.size.height * 0.6
+                        )
+                        .customTransform { view in
+                            if #available(macOS 26.0, *) {
+                                view.glassEffect(in: .rect(cornerRadius: 24))
+                            } else {
+                                view.background(.quinary, in: .rect(cornerRadius: 24))
                             }
                         }
-                        .padding([.leading, .bottom])
+                        .padding(.top, 20)
                     }
-                    .frame(height: geometry.size.height * 0.75)
-                } else {
-                    ContentUnavailableView(
-                        "Welcome to WinGame!",
-                        systemImage: "hand.wave",
-                        description: .init("""
-                        This area is where your most recently played game will appear — try launching one now!
-                        """)
-                    )
-                    .frame(
-                        width: geometry.size.width,
-                        height: geometry.size.height * 0.75
-                    )
-                    .background(.quinary)
-                }
-                
-                Form {
-                    Section("Your Favourites", isExpanded: $isFavouritesSectionExpanded) {
-                        if favouriteGamesExcludingRecent.isEmpty {
-                            HStack(alignment: .center) {
-                                Spacer()
-                                ContentUnavailableView(
-                                    "No Favourites",
-                                    systemImage: "star.slash.fill",
-                                    description: .init("""
-                                    Games you favourite will appear here.
-                                    You can favourite a game by pressing [􀍠] → [􀋂].
-                                    """)
-                                )
-                                Spacer()
-                            }
-                        } else {
-                            LazyVGrid(columns: [.init(.adaptive(minimum: gameCardSize))]) {
-                                ForEach(favouriteGamesExcludingRecent) { game in
-                                    GameCard(game: .constant(game))
+                    
+                    VStack(alignment: .leading, spacing: 16) {
+                        DisclosureGroup("Your Favourites", isExpanded: $isFavouritesSectionExpanded) {
+                            if favouriteGamesExcludingRecent.isEmpty {
+                                HStack(alignment: .center) {
+                                    Spacer()
+                                    ContentUnavailableView(
+                                        "No Favourites",
+                                        systemImage: "star.slash.fill",
+                                        description: .init("""
+                                        Games you favourite will appear here.
+                                        You can favourite a game by pressing [􀍠] → [􀋂].
+                                        """)
+                                    )
+                                    Spacer()
                                 }
+                                .padding(.vertical, 30)
+                            } else {
+                                LazyVGrid(columns: [.init(.adaptive(minimum: gameCardSize), spacing: 16)], spacing: 16) {
+                                    ForEach(favouriteGamesExcludingRecent) { game in
+                                        GameCard(game: .constant(game))
+                                    }
+                                }
+                                .padding(.top, 8)
                             }
                         }
+                        .font(.title2.weight(.bold))
+                        
+                        DisclosureGroup("Your Containers", isExpanded: $isContainersSectionExpanded) {
+                            ContainerListView()
+                                .padding(.top, 8)
+                        }
+                        .font(.title2.weight(.bold))
                     }
-                    
-                    Section("Your Containers", isExpanded: $isContainersSectionExpanded) {
-                        ContainerListView()
-                    }
-                    
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
                 }
-                .formStyle(.grouped)
             }
         }
-        .ignoresSafeArea(edges: .top)
         .customTransform { view in
             if #available(macOS 15.0, *) {
                 view
                     .toolbar(removing: .title)
-                    .toolbarBackgroundVisibility(.hidden) // dirtyfixes toolbar reappearance on view reload in navigationsplitview
+                    .toolbarBackgroundVisibility(.hidden)
             } else {
                 view
-                    .toolbarBackground(.hidden) // dirtyfixes toolbar reappearance on view reload in navigationsplitview
+                    .toolbarBackground(.hidden)
             }
         }
-
         .navigationTitle("Home")
         .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Viewing home"
-                presence.state = "Idle"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-                
-                return presence
-            }())
+            
         }
     }
 }

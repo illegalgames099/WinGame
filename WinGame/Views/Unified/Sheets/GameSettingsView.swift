@@ -1,10 +1,8 @@
 // where the hell is the comment
 
 import SwiftUI
-import SwordRPC
 import OSLog
 import Darwin
-import Glur
 
 // FIXME: refactor: warning ‼️ below code may need a cleanup
 struct GameSettingsView: View {
@@ -35,9 +33,7 @@ struct GameSettingsView: View {
                             .aspectRatio(16/9, contentMode: .fill)
                             .frame(width: geometry.size.width,
                                    height: geometry.size.height * 0.75)
-                            .glur(radius: 18,
-                                  offset: 0.6,
-                                  interpolation: 0.6)
+                            .winGlassEffect()
                         
                         HStack {
                             if isImageEmpty && game.isFallbackImageAvailable {
@@ -293,14 +289,7 @@ private extension GameSettingsView {
     }
     
     func setDiscordPresence() {
-        discordRPC.setPresence({
-            var presence: RichPresence = .init()
-            presence.details = "Configuring \"\(game.title)\""
-            presence.state = "Configuring \(game.title)"
-            presence.timestamps.start = .now
-            presence.assets.largeImage = "macos_512x512_2x"
-            return presence
-        }())
+        
     }
 }
 

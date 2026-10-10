@@ -9,23 +9,16 @@
 
 import OSLog
 
-import SemanticVersion
 import SwiftUI
-import SwordRPC
 import UserNotifications
 
-import Firebase
-import FirebaseCore
-import FirebaseCrashlytics
 
 // TODO: modularise
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         // MARK: Firebase Configuration
         // Use the Firebase library to configure APIs.
-        FirebaseApp.configure()
 
-        FirebaseConfiguration.shared.setLoggerLevel(.min)
 
         setenv("CX_ROOT", Bundle.main.bundlePath, 1)
 
@@ -64,10 +57,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // MARK: DiscordRPC Delegate Ininitialisation & Connection
-        discordRPC.delegate = self
-        if UserDefaults.standard.bool(forKey: "discordRPC"), discordRPC.isDiscordInstalled {
-            _ = discordRPC.connect()
-        }
+        
+        
 
         // MARK: Applications folder disclaimer
 #if !DEBUG
@@ -114,11 +105,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_: Notification) {
-        _ = discordRPC.connect()
+        
     }
 
     func applicationDidResignActive(_: Notification) {
-        discordRPC.disconnect()
+        
     }
 
     @MainActor func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -168,16 +159,4 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: UNUserNotificationCenterDelegate {}
 
-extension AppDelegate: SwordRPCDelegate {
-    func swordRPCDidConnect(_ rpc: SwordRPC) {
-        rpc.setPresence({
-            var presence: RichPresence = .init()
-            presence.details = "Idling in WinGame"
-            presence.state = "Idle"
-            presence.timestamps.start = .now
-            presence.assets.largeImage = "macos_512x512_2x"
 
-            return presence
-        }())
-    }
-}

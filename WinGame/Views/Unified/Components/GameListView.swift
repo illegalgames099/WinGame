@@ -50,19 +50,19 @@ struct GameListView: View {
                     // FIXME: a dirtyfix is to directly set to the underlying library
                     switch layout {
                     case .grid:
-                        LazyVGrid(columns: [.init(.adaptive(minimum: gameCardSize))]) {
+                        LazyVGrid(columns: [.init(.adaptive(minimum: gameCardSize), spacing: 20)], spacing: 20) {
                             ForEach(viewModel.sortedLibrary) { game in
                                 GameCard(game: .constant(game))
                             }
                         }
-                        .padding()
+                        .padding(20)
                     case .list:
-                        LazyVStack {
+                        LazyVStack(spacing: 16) {
                             ForEach(viewModel.sortedLibrary) { game in
                                 ListGameCard(game: .constant(game))
                             }
                         }
-                        .padding()
+                        .padding(20)
                     }
                 }
                 .searchable(text: $viewModel.searchString,
@@ -84,8 +84,8 @@ struct GameListView: View {
                 }
             }
         }
-        .animation(.easeInOut, value: layout)
-        .animation(.default, value: viewModel.sortedLibrary)
+        .animation(.easeInOut(duration: 0.3), value: layout)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.sortedLibrary)
     }
 }
     

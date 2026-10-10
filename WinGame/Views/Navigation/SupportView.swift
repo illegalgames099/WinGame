@@ -9,7 +9,6 @@
 
 import SwiftUI
 import AppKit
-import SwordRPC
 
 struct SupportView: View {
 
@@ -71,14 +70,7 @@ struct SupportView: View {
         }
         .task(priority: .background) {
             // Set rich presence using SwordRPC
-            discordRPC.setPresence({
-                var presence = RichPresence()
-                presence.details = "Looking for help"
-                presence.state = "Viewing Support"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-                return presence
-            }())
+            
         }
         .navigationTitle("Support")
     }

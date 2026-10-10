@@ -8,13 +8,12 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import SwordRPC
 
 struct ContainerCreationView: View {
     @Binding var isPresented: Bool
 
     @State private var containerName: String = "My Container"
-    @State private var containerURL: URL = Wine.containersDirectory!
+    @State private var containerURL: URL = Wine.containersDirectory ?? FileManager.default.homeDirectoryForCurrentUser
 
     @State private var isContainerURLFileImporterPresented: Bool = false
 
@@ -23,6 +22,8 @@ struct ContainerCreationView: View {
     
     @State private var bootErrorDescription: String = String(localized: "Unknown Error.")
     @State private var isBootFailureAlertPresented: Bool = false
+    
+    @State private var creationTask: Task<Void, Never>?
     
     var body: some View {
         VStack {
@@ -76,7 +77,10 @@ struct ContainerCreationView: View {
                     Alert(
                         title: .init("Are you sure you want to cancel container creation?"),
                         message: .init("This will cancel \"\(containerName)\"'s creation."),
-                        primaryButton: .destructive(.init("OK")),
+                        primaryButton: .destructive(.init("OK")) {
+                            creationTask?.cancel()
+                            isPresented = false
+                        },
                         secondaryButton: .cancel()
                     )
                 }
@@ -90,13 +94,18 @@ struct ContainerCreationView: View {
                 }
 
                 Button("Done") {
-                    Task(priority: .userInitiated) {
-                        withAnimation { isBooting = true }
+                    guard !isBooting else { return }
+                    withAnimation { isBooting = true }
+                    creationTask = Task(priority: .userInitiated) {
                         do {
                             _ = try await Wine.createContainer(baseURL: containerURL, name: containerName)
+                            
+                            guard !Task.isCancelled else { return }
+                            
                             withAnimation { isBooting = false }
                             isPresented = false
                         } catch {
+                            guard !Task.isCancelled else { return }
                             bootErrorDescription = error.localizedDescription
                             withAnimation { isBooting = false }
                             isBootFailureAlertPresented = true
@@ -119,15 +128,7 @@ struct ContainerCreationView: View {
         }
         
         .task(priority: .background) {
-            discordRPC.setPresence({
-                var presence: RichPresence = .init()
-                presence.details = "Currently creating container \"\(containerName)\""
-                presence.state = "Creating a container"
-                presence.timestamps.start = .now
-                presence.assets.largeImage = "macos_512x512_2x"
-                
-                return presence
-            }())
+            
         }
     }
 }

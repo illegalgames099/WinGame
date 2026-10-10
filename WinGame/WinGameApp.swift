@@ -8,8 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import Sparkle
-import WhatsNewKit
 
 @main
 struct WinGameApp: App {
@@ -33,7 +31,7 @@ struct WinGameApp: App {
                         }
                 } else {
                     ContentView()
-                        .whatsNewSheet()
+                        
                         .environmentObject(networkMonitor)
                         .task(priority: .high) {
                             await MainActor.run {
@@ -42,24 +40,11 @@ struct WinGameApp: App {
                         }
                 }
             }
-            .modifier(SparkleUpdater())
+            
             .frame(minWidth: 850, minHeight: 400)
         }
         .handlesExternalEvents(matching: ["open"])
-        .environment(
-            \.whatsNew,
-             WhatsNewEnvironment(
-                versionStore:
-                    {
-#if DEBUG
-                        InMemoryWhatsNewVersionStore()
-#else
-                        UserDefaultsWhatsNewVersionStore()
-#endif
-                    }(),
-                whatsNewCollection: self
-             )
-        )
+        
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button {
@@ -70,7 +55,7 @@ struct WinGameApp: App {
             }
 
             CommandGroup(after: .appInfo) {
-                Button("Check for WinGame Updates...", action: { SparkleUpdateController.shared.checkForUpdates(userInitiated: true) })
+                
                 
                 Button("Check for WinGame Engine Updates...") {
                     Task(priority: .userInitiated) {

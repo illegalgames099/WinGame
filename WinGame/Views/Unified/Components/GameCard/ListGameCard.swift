@@ -8,8 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import Glur
-import Shimmer
 
 struct ListGameCard: View {
     @Binding var game: Game
@@ -29,9 +27,7 @@ struct ListGameCard: View {
                            height: geometry.size.height,
                            alignment: .center)
                     .conditionalTransform(if: isCardExpanded) { view in
-                        view.glur(radius: 18,
-                                  offset: 0.6,
-                                  interpolation: 0.6)
+                        view.winGlassEffect()
                     }
             }
             

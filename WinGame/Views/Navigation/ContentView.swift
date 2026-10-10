@@ -12,7 +12,6 @@
 
 import Foundation
 import SwiftUI
-import SemanticVersion
 
 struct ContentView: View {
     @EnvironmentObject var networkMonitor: NetworkMonitor
@@ -36,38 +35,40 @@ struct ContentView: View {
                         }
                         
                         NavigationLink(destination: LibraryView()) {
-                            Label("Library", systemImage: "books.vertical")
+                            Label("Library", systemImage: "books.vertical.fill")
                                 .help("View your games")
                         }
                         
                         NavigationLink(destination: StoreView()) {
-                            Label("Store", systemImage: "bag")
+                            Label("Store", systemImage: "bag.fill")
                                 .help("Purchase new games from Epic")
                         }
                     }
                     
                     Section {
                         NavigationLink(destination: ContainersView()) {
-                            Label("Containers", systemImage: "cube")
+                            Label("Containers", systemImage: "cube.fill")
                                 .help("Manage containers for Windows® applications")
                         }
                         
-                        Button("Support", systemImage: "questionmark.bubble") {
+                        Button {
                             SupportWindowController.show()
+                        } label: {
+                            Label("Support", systemImage: "questionmark.bubble.fill")
                         }
                         .help("Get support")
                         .buttonStyle(.plain)
                         
                         NavigationLink(destination: AccountsView()) {
-                            Label("Accounts", systemImage: "person.2")
+                            Label("Accounts", systemImage: "person.2.fill")
                                 .help("View all currently signed in accounts")
                         }
                     } header: {
                         Text("Management")
                     }
                 }
+                .listStyle(.sidebar)
 
-                // separate downloads view from main list because alignment doesn't work within the main list
                 if !operationManager.queue.isEmpty {
                     List { // must wrap in a list to have the same styling as the other links
                         NavigationLink(destination: OperationsView()) {
@@ -80,25 +81,26 @@ struct ContentView: View {
                     .scrollIndicators(.hidden)
                 }
                 
-#if DEBUG
-                VStack {
+                VStack(spacing: 8) {
                     if let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
                        let bundleVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
                        let wingameVersion: SemanticVersion = .init("\(shortVersion)+\(bundleVersion)") {
                         Text("WinGame \(wingameVersion.prettyString)")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
                     }
                     
                     if let engineVersion {
-                        Text("WinGame Engine \(engineVersion.prettyString)")
+                        Text("Engine \(engineVersion.prettyString)")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
                     }
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 12)
                 .task { @MainActor in
                     engineVersion = await Engine.installedVersion
                 }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.bottom)
-#endif // DEBUG
 
                 switch updateController.state {
                 case .updateAvailable:
@@ -119,9 +121,9 @@ struct ContentView: View {
         .toolbar {
             ToolbarItem(placement: .status) {
                 if !networkMonitor.isConnected {
-                    Image(systemName: "network")
-                        .symbolVariant(.slash)
+                    Image(systemName: "network.slash")
                         .help("WinGame is not connected to the internet.")
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -129,20 +131,24 @@ struct ContentView: View {
 
     @ViewBuilder
     private func updateBlock(_ title: String, buttonText: String, action: @escaping () -> Void) -> some View {
-        VStack {
-            Label(title, systemImage: "info.circle")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        VStack(spacing: 6) {
+            Label(title, systemImage: "arrow.up.circle.fill")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.primary)
 
             Button(action: action, label: {
                 Text(buttonText)
                     .frame(maxWidth: .infinity)
             })
             .buttonStyle(.borderedProminent)
-            .clipShape(.capsule)
+            .controlSize(.small)
+            .clipShape(Capsule())
         }
-        .padding(8)
+        .padding(10)
         .frame(maxWidth: .infinity)
+        .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.horizontal, 10)
+        .padding(.bottom, 10)
     }
 }
 

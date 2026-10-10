@@ -9,7 +9,6 @@
 
 import Foundation
 import SwiftUI
-import Glur
 
 // May be unnecesary since used only once (`HomeView`)
 struct HeroGameCard: View {
@@ -26,9 +25,7 @@ struct HeroGameCard: View {
                 .aspectRatio(16/9, contentMode: .fill)
                 .frame(width: geometry.size.width,
                        height: geometry.size.height * 0.75)
-                .glur(radius: 18,
-                      offset: 0.6,
-                      interpolation: 0.6)
+                .winGlassEffect()
                 .customTransform { view in
                     if #available(macOS 26.0, *) {
                         view.backgroundExtensionEffect()

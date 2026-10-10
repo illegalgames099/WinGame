@@ -9,7 +9,6 @@
 
 import Foundation
 import OSLog
-import SemanticVersion
 import AppKit
 
 final class Engine {
@@ -65,7 +64,6 @@ final class Engine {
         }
         
         let decoder: PropertyListDecoder = .init()
-        decoder.semanticVersionDecodingStrategy = .semverString
         
         let catalog = try decoder.decode(UpdateCatalog.self, from: data)
         
@@ -83,7 +81,6 @@ final class Engine {
         guard isInstalled else { throw NotInstalledError() }
         
         let decoder: PropertyListDecoder = .init()
-        decoder.semanticVersionDecodingStrategy = .defaultCodable
         
         let properties = directory.appending(path: "Properties.plist")
         return try decoder.decode(EngineProperties.self, from: .init(contentsOf: properties))

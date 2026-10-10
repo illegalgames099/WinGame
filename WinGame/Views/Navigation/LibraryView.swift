@@ -8,8 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import SwiftyJSON
-import SwordRPC
 
 /// A view displaying the user's library of games.
 struct LibraryView: View {
@@ -54,17 +52,19 @@ struct LibraryView: View {
                 if !gameListViewModel.sortedLibrary.isEmpty {
                     ToolbarItem(placement: .automatic) {
                         Picker("Layout", systemImage: "macwindow", selection: $gameListLayout) {
-                            Label("List", systemImage: "rectangle.grid.1x3")
+                            Label("List", systemImage: "list.bullet")
                                 .tag(GameListViewModel.Layout.list)
                             
-                            Label("Grid", systemImage: "square.grid.3x3")
+                            Label("Grid", systemImage: "square.grid.2x2")
                                 .tag(GameListViewModel.Layout.grid)
                         }
+                        .pickerStyle(.segmented)
+                        .frame(width: 100)
                         .animation(.easeInOut, value: $gameListLayout.wrappedValue)
                     }
                     
                     ToolbarItem(placement: .automatic) {
-                        Menu("Filters", systemImage: "line.3.horizontal.decrease") {
+                        Menu("Filters", systemImage: "line.3.horizontal.decrease.circle") {
                             Section("Platform") {
                                 ForEach(Game.Platform.allCases, id: \.self) { platform in
                                     Toggle(platform.description,
@@ -96,15 +96,7 @@ struct LibraryView: View {
             }
         
             .task(priority: .background) {
-                discordRPC.setPresence({
-                    var presence: RichPresence = .init()
-                    presence.details = "Looking through their game library"
-                    presence.state = "Viewing Library"
-                    presence.timestamps.start = .now
-                    presence.assets.largeImage = "macos_512x512_2x"
-                    
-                    return presence
-                }())
+                
             }
         
             .sheet(isPresented: $isGameImportSheetPresented) {

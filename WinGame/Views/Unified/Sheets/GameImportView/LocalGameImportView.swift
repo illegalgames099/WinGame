@@ -8,8 +8,6 @@
 // Copyright © 2023-2025 vapidinfinity
 
 import SwiftUI
-import SwordRPC
-import Shimmer
 import UniformTypeIdentifiers
 import OSLog
 

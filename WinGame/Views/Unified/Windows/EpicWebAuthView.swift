@@ -7,7 +7,6 @@
 
 import SwiftUI
 import WebKit
-import SwiftyJSON
 import OSLog
 
 struct EpicWebAuthView: View {

@@ -131,9 +131,12 @@ struct GameSettingsView: View {
                     isPresented: $isInstallSheetPresented
                 )
                 .padding()
-                .frame(width: 700, height: 380)
+                .frame(width: 700, height: 420)
             default:
-                EmptyView()
+                StorefrontGameInstallationView(
+                    game: $game,
+                    isPresented: $isInstallSheetPresented
+                )
             }
         }
         .sheet(isPresented: $isUninstallSheetPresented) {

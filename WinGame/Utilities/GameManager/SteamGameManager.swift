@@ -16,8 +16,21 @@ struct SteamGameManager: StorefrontGameManager {
         guard case .steam = game.storefront,
               let castGame = game as? SteamGame else { throw CocoaError(.coderInvalidValue) }
         
+        let targetAppID: String = {
+            if castGame.id.allSatisfy({ $0.isNumber }) {
+                return castGame.id
+            }
+            let cachedTitles = (UserDefaults.standard.dictionary(forKey: "steam_resolved_titles") as? [String: String]) ?? [:]
+            for (id, title) in cachedTitles {
+                if title.caseInsensitiveCompare(castGame.title) == .orderedSame {
+                    return id
+                }
+            }
+            return castGame.id
+        }()
+
         let operation: GameOperation = .init(game: castGame, type: .launch) { _ in
-            guard let url = URL(string: "steam://rungameid/\(castGame.id)") else {
+            guard let url = URL(string: "steam://rungameid/\(targetAppID)") else {
                 throw CocoaError(.serviceApplicationLaunchFailed)
             }
             NSWorkspace.shared.open(url)
@@ -38,8 +51,21 @@ struct SteamGameManager: StorefrontGameManager {
         guard case .steam = game.storefront,
               let castGame = game as? SteamGame else { throw CocoaError(.coderInvalidValue) }
         
+        let targetAppID: String = {
+            if castGame.id.allSatisfy({ $0.isNumber }) {
+                return castGame.id
+            }
+            let cachedTitles = (UserDefaults.standard.dictionary(forKey: "steam_resolved_titles") as? [String: String]) ?? [:]
+            for (id, title) in cachedTitles {
+                if title.caseInsensitiveCompare(castGame.title) == .orderedSame {
+                    return id
+                }
+            }
+            return castGame.id
+        }()
+
         let operation: GameOperation = .init(game: castGame, type: .uninstall) { _ in
-            guard let url = URL(string: "steam://uninstall/\(castGame.id)") else {
+            guard let url = URL(string: "steam://uninstall/\(targetAppID)") else {
                 throw CocoaError(.serviceApplicationLaunchFailed)
             }
             NSWorkspace.shared.open(url)
@@ -54,11 +80,28 @@ struct SteamGameManager: StorefrontGameManager {
         guard case .steam = game.storefront,
               let castGame = game as? SteamGame else { throw CocoaError(.coderInvalidValue) }
         
+        let targetAppID: String = {
+            if castGame.id.allSatisfy({ $0.isNumber }) {
+                return castGame.id
+            }
+            let cachedTitles = (UserDefaults.standard.dictionary(forKey: "steam_resolved_titles") as? [String: String]) ?? [:]
+            for (id, title) in cachedTitles {
+                if title.caseInsensitiveCompare(castGame.title) == .orderedSame {
+                    return id
+                }
+            }
+            return castGame.id
+        }()
+
         let operation: GameOperation = .init(game: castGame, type: .install) { _ in
-            guard let url = URL(string: "steam://install/\(castGame.id)") else {
+            guard let url = URL(string: "steam://install/\(targetAppID)") else {
                 throw CocoaError(.serviceApplicationLaunchFailed)
             }
-            NSWorkspace.shared.open(url)
+            if !NSWorkspace.shared.open(url) {
+                if let steamApp = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.valvesoftware.steam") {
+                    NSWorkspace.shared.open([url], withApplicationAt: steamApp, configuration: NSWorkspace.OpenConfiguration())
+                }
+            }
         }
         Game.operationManager.queueOperation(operation)
         return operation

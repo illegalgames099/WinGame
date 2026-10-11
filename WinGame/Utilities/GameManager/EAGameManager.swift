@@ -88,9 +88,19 @@ struct EAGameManager: StorefrontGameManager {
         guard case .electronicArts = game.storefront,
               let castGame = game as? EAGame else { throw CocoaError(.coderInvalidValue) }
         
+        let cleanID = castGame.id.hasPrefix("ea-") ? String(castGame.id.dropFirst(3)) : castGame.id
+
         let operation: GameOperation = .init(game: castGame, type: .install) { _ in
-            if let url = URL(string: "origin://launchgame/\(castGame.id)") {
-                NSWorkspace.shared.open(url)
+            if let url = URL(string: "origin2://game/launch?offerIds=\(cleanID)&autoDownload=1"),
+               NSWorkspace.shared.open(url) {
+                return
+            }
+            if let url = URL(string: "origin://launchgame/\(cleanID)"),
+               NSWorkspace.shared.open(url) {
+                return
+            }
+            if let webURL = URL(string: "https://www.ea.com/games/library") {
+                NSWorkspace.shared.open(webURL)
             }
         }
         Game.operationManager.queueOperation(operation)

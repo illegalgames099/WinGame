@@ -103,7 +103,8 @@ struct HomeView: View {
                             width: geometry.size.width - 40,
                             height: geometry.size.height * 0.6
                         )
-                        .winGlassEffect(in: .rect(cornerRadius: 24))
+                        .winGlassEffect()
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .padding(.top, 20)
                     }
                     

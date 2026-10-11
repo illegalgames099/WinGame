@@ -63,7 +63,8 @@ struct GameCard: View {
                     view.foregroundStyle(.white)
                 }
                 .padding(.vertical, 4)
-                .winGlassEffect(in: .rect(cornerRadius: 16.0))
+                .winGlassEffect()
+                .clipShape(RoundedRectangle(cornerRadius: 16.0, style: .continuous))
                 .padding(8)
             }
             .overlay(alignment: .top) {
@@ -75,7 +76,8 @@ struct GameCard: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .winGlassEffect(in: .capsule)
+                        .winGlassEffect()
+                        .clipShape(Capsule())
                     }
                 }
                 .padding(12)
